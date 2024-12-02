@@ -1,0 +1,229 @@
+import java.awt.*;
+import java.awt.event.*;
+import java.util.HashMap;
+import java.util.Map;
+
+public class MovieTicketBookingSystem {
+    Frame frame;
+    Label title, movieLabel, nameLabel, ticketsLabel, priceLabel, seatLabel, timeLabel, resultLabel, availableSeatsLabel;
+    Choice movieChoice, timeChoice;
+    TextField nameField, ticketsField, priceField, availableSeatsField;
+    Button bookButton, resetButton;
+
+    // Map to store movie prices, seat availability, and show timings
+    Map<String, Double> moviePrices;
+    Map<String, Map<String, Boolean[]>> movieSeats;
+
+    public MovieTicketBookingSystem() {
+        // Initialize movie data
+        moviePrices = new HashMap<>();
+        moviePrices.put("Avatar", 300.0);
+        moviePrices.put("Avengers: Endgame", 350.0);
+        moviePrices.put("The Batman", 280.0);
+        moviePrices.put("Spider-Man: No Way Home", 320.0);
+
+        movieSeats = new HashMap<>();
+        String[] showTimings = {"10:00 AM", "1:00 PM", "4:00 PM", "7:00 PM"};
+        for (String movie : moviePrices.keySet()) {
+            Map<String, Boolean[]> timingSeats = new HashMap<>();
+            for (String timing : showTimings) {
+                Boolean[] seats = new Boolean[100];
+                for (int i = 0; i < seats.length; i++) {
+                    seats[i] = true;
+                }
+                timingSeats.put(timing, seats);
+            }
+            movieSeats.put(movie, timingSeats);
+        }
+
+        // Frame setup
+        frame = new Frame("Movie Ticket Booking System");
+        frame.setLayout(null);
+        frame.setSize(800, 700);
+
+        // Title
+        title = new Label("Book Your Movie Tickets");
+        title.setFont(new Font("Arial", Font.BOLD, 16));
+        title.setBounds(260, 40, 280, 30);
+        frame.add(title);
+
+        // Movie Label and Choice
+        movieLabel = new Label("Select Movie:");
+        movieLabel.setBounds(50, 100, 100, 30);
+        frame.add(movieLabel);
+
+        movieChoice = new Choice();
+        for (String movie : moviePrices.keySet()) {
+            movieChoice.add(movie);
+        }
+        movieChoice.setBounds(150, 100, 180, 30);
+        frame.add(movieChoice);
+
+        // Show Timing Label and Choice
+        timeLabel = new Label("Show Timing:");
+        timeLabel.setBounds(50, 150, 100, 30);
+        frame.add(timeLabel);
+
+        timeChoice = new Choice();
+        for (String timing : showTimings) {
+            timeChoice.add(timing);
+        }
+        timeChoice.setBounds(150, 150, 180, 30);
+        frame.add(timeChoice);
+
+        // Available Seats Label and TextField
+        availableSeatsLabel = new Label("Seats Available:");
+        availableSeatsLabel.setBounds(50, 200, 100, 30);
+        frame.add(availableSeatsLabel);
+
+        availableSeatsField = new TextField();
+        availableSeatsField.setBounds(150, 200, 180, 30);
+        availableSeatsField.setEditable(false);
+        frame.add(availableSeatsField);
+
+        // Name Label and TextField
+        nameLabel = new Label("Your Name:");
+        nameLabel.setBounds(50, 250, 100, 30);
+        frame.add(nameLabel);
+
+        nameField = new TextField();
+        nameField.setBounds(150, 250, 180, 30);
+        frame.add(nameField);
+
+        // Tickets Label and TextField
+        ticketsLabel = new Label("No. of Tickets:");
+        ticketsLabel.setBounds(50, 300, 100, 30);
+        frame.add(ticketsLabel);
+
+        ticketsField = new TextField();
+        ticketsField.setBounds(150, 300, 180, 30);
+        frame.add(ticketsField);
+
+        // Ticket Price Label
+        priceLabel = new Label("Price (₹):");
+        priceLabel.setBounds(50, 350, 100, 30);
+        frame.add(priceLabel);
+
+        priceField = new TextField();
+        priceField.setBounds(150, 350, 180, 30);
+        priceField.setEditable(false);
+        frame.add(priceField);
+
+        // Book Button
+        bookButton = new Button("Book Tickets");
+        bookButton.setBounds(70, 450, 120, 40);
+        frame.add(bookButton);
+
+        // Reset Button
+        resetButton = new Button("Reset");
+        resetButton.setBounds(220, 450, 120, 40);
+        frame.add(resetButton);
+
+        // Result Label
+        resultLabel = new Label("");
+        resultLabel.setBounds(50, 520, 700, 30);
+        frame.add(resultLabel);
+
+        // Event Listeners
+        ItemListener updateSeatsAndPrice = e -> {
+            String movie = movieChoice.getSelectedItem();
+            String timing = timeChoice.getSelectedItem();
+
+            // Update ticket price
+            priceField.setText(String.valueOf(moviePrices.get(movie)));
+
+            // Update available seats
+            Boolean[] seats = movieSeats.get(movie).get(timing);
+            int availableSeats = 0;
+            for (boolean seat : seats) {
+                if (seat) {
+                    availableSeats++;
+                }
+            }
+            availableSeatsField.setText(String.valueOf(availableSeats));
+        };
+
+        movieChoice.addItemListener(updateSeatsAndPrice);
+        timeChoice.addItemListener(updateSeatsAndPrice);
+
+        // Book Tickets Button Action
+        bookButton.addActionListener(e -> {
+            String movie = movieChoice.getSelectedItem();
+            String timing = timeChoice.getSelectedItem();
+            String name = nameField.getText();
+            String tickets = ticketsField.getText();
+
+            if (name.isEmpty() || tickets.isEmpty()) {
+                resultLabel.setText("Please fill in all details.");
+                return;
+            }
+
+            try {
+                int numTickets = Integer.parseInt(tickets);
+
+                if (numTickets < 1) {
+                    resultLabel.setText("You must book at least 1 ticket.");
+                    return;
+                }
+
+                Boolean[] seats = movieSeats.get(movie).get(timing);
+                int availableSeats = 0;
+                for (boolean seat : seats) {
+                    if (seat) {
+                        availableSeats++;
+                    }
+                }
+
+                if (numTickets > availableSeats) {
+                    resultLabel.setText("Not enough seats available. Only " + availableSeats + " left.");
+                    return;
+                }
+
+                // Book seats
+                int bookedCount = 0;
+                StringBuilder bookedSeats = new StringBuilder();
+                for (int i = 0; i < seats.length && bookedCount < numTickets; i++) {
+                    if (seats[i]) {
+                        seats[i] = false;
+                        bookedSeats.append("Seat ").append(i + 1).append(", ");
+                        bookedCount++;
+                    }
+                }
+
+                double totalCost = numTickets * moviePrices.get(movie);
+                resultLabel.setText("Booking confirmed for " + name + ": " + movie +
+                        " (" + timing + ", " + bookedSeats.substring(0, bookedSeats.length() - 2) + "). Total: ₹" + totalCost);
+
+                // Update available seats
+                availableSeatsField.setText(String.valueOf(availableSeats - numTickets));
+            } catch (NumberFormatException ex) {
+                resultLabel.setText("Enter a valid number for tickets.");
+            }
+        });
+
+        // Reset Button Action
+        resetButton.addActionListener(e -> {
+            nameField.setText("");
+            ticketsField.setText("");
+            priceField.setText("");
+            availableSeatsField.setText("");
+            resultLabel.setText("");
+            movieChoice.select(0);
+            timeChoice.select(0);
+        });
+
+        // Close Window Action
+        frame.addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                frame.dispose();
+            }
+        });
+
+        frame.setVisible(true);
+    }
+
+    public static void main(String[] args) {
+        new MovieTicketBookingSystem();
+    }
+}
